@@ -14,9 +14,9 @@
 
 package io.pivotal.config;
 
-
 import io.pivotal.model.Name;
 import io.pivotal.model.Pizza;
+import org.apache.geode.distributed.ConfigurationProperties;
 import org.apache.geode.pdx.ReflectionBasedAutoSerializer;
 import org.springframework.cloud.Cloud;
 import org.springframework.cloud.CloudFactory;
@@ -29,6 +29,7 @@ import org.springframework.data.gemfire.support.ConnectionEndpoint;
 
 import java.net.URI;
 import java.util.Properties;
+
 
 @Configuration
 @ClientCacheApplication(name = "GemFireSpringPizzaStoreApplication", durableClientId = "pizza-store", keepAlive = true, readyForEvents = true, subscriptionEnabled = true)
@@ -56,6 +57,15 @@ public class GemfireConfiguration {
             gemfireProperties.setProperty(SECURITY_PASSWORD, serviceInfo.getPassword());
             gemfireProperties.setProperty(SECURITY_CLIENT, "io.pivotal.config.UserAuthInitialize.create");
 
+
+            boolean isEnabledSSL=new Boolean(System.getenv("SPRING_DATA_GEMFIRE_SECURITY_ENABLE_SSL"));
+            if(isEnabledSSL){
+               gemfireProperties.setProperty(ConfigurationProperties.SSL_ENABLED_COMPONENTS, "ALL");
+               gemfireProperties.setProperty(ConfigurationProperties.SSL_TRUSTSTORE, System.getenv("SPRING_DATA_GEMFIRE_SECURITY_SSL_TRUSTSTORE"));
+               gemfireProperties.setProperty(ConfigurationProperties.SSL_TRUSTSTORE_PASSWORD, System.getenv("SPRING_DATA_GEMFIRE_SECURITY_SSL_TRUSTSTORE_PASSWORD"));
+               gemfireProperties.setProperty(ConfigurationProperties.SSL_REQUIRE_AUTHENTICATION,"false");
+            }
+
             for (URI locator : serviceInfo.getLocators()) {
                 clientCacheFactoryBean.addLocators(new ConnectionEndpoint(locator.getHost(), locator.getPort()));
             }
@@ -65,5 +75,4 @@ public class GemfireConfiguration {
                     new ReflectionBasedAutoSerializer("io.pivotal.model.Pizza", "io.pivotal.model.Name"));
         };
     }
-
 }
